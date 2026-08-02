@@ -1,0 +1,40 @@
+{
+  "description": "Scoring contract for 50m compound, 80cm 6-ring face. Arrows are [value, isX] pairs. Any implementation in any language must reproduce every expected value.",
+  "cases": [
+    {
+      "name": "empty round",
+      "arrows": [],
+      "expected": { "total": 0, "xCount": 0, "tenCount": 0, "endTotals": [], "complete": false }
+    },
+    {
+      "name": "perfect round of Xs",
+      "arrows": [[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true],[10,true]],
+      "expected": { "total": 360, "xCount": 36, "tenCount": 36, "endTotals": [60,60,60,60,60,60], "complete": true }
+    },
+    {
+      "name": "all misses",
+      "arrows": [[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false],[0,false]],
+      "expected": { "total": 0, "xCount": 0, "tenCount": 0, "endTotals": [0,0,0,0,0,0], "complete": true }
+    },
+    {
+      "name": "X scores ten not eleven",
+      "arrows": [[10,true],[10,false]],
+      "expected": { "total": 20, "xCount": 1, "tenCount": 2, "endTotals": [20], "complete": false }
+    },
+    {
+      "name": "single end across every scoring zone",
+      "arrows": [[10,true],[10,false],[9,false],[8,false],[7,false],[6,false]],
+      "expected": { "total": 50, "xCount": 1, "tenCount": 2, "endTotals": [50], "complete": false }
+    },
+    {
+      "name": "partial end is kept whole",
+      "arrows": [[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[5,false],[0,false]],
+      "expected": { "total": 59, "xCount": 0, "tenCount": 0, "endTotals": [54,5], "complete": false }
+    },
+    {
+      "name": "five ends is incomplete and excluded from statistics",
+      "arrows": [[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false],[9,false]],
+      "expected": { "total": 270, "xCount": 0, "tenCount": 0, "endTotals": [54,54,54,54,54], "complete": false }
+    }
+  ]
+}
