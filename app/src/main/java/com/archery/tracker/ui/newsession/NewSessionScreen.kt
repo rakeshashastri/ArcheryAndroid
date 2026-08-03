@@ -60,6 +60,40 @@ fun NewSessionScreen(container: AppContainer, navController: NavController) {
             }
         }
 
+        var timeOfDayExpanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(expanded = timeOfDayExpanded, onExpandedChange = { timeOfDayExpanded = it }) {
+            OutlinedTextField(
+                value = state.timeOfDay.name,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Time of day") },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            )
+            ExposedDropdownMenuDefaults.TrailingIcon(expanded = timeOfDayExpanded)
+            ExposedDropdownMenu(expanded = timeOfDayExpanded, onDismissRequest = { timeOfDayExpanded = false }) {
+                TimeOfDay.entries.forEach { timeOfDay ->
+                    DropdownMenuItem(text = { Text(timeOfDay.name) }, onClick = { viewModel.updateTimeOfDay(timeOfDay); timeOfDayExpanded = false })
+                }
+            }
+        }
+
+        var targetPositionExpanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(expanded = targetPositionExpanded, onExpandedChange = { targetPositionExpanded = it }) {
+            OutlinedTextField(
+                value = state.targetPosition.name,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Target position") },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            )
+            ExposedDropdownMenuDefaults.TrailingIcon(expanded = targetPositionExpanded)
+            ExposedDropdownMenu(expanded = targetPositionExpanded, onDismissRequest = { targetPositionExpanded = false }) {
+                TargetPosition.entries.forEach { position ->
+                    DropdownMenuItem(text = { Text(position.name) }, onClick = { viewModel.updateTargetPosition(position); targetPositionExpanded = false })
+                }
+            }
+        }
+
         OutlinedTextField(value = state.date, onValueChange = viewModel::updateDate, label = { Text("Date") })
         OutlinedTextField(value = state.arrowSet, onValueChange = viewModel::updateArrowSet, label = { Text("Arrow set") })
         OutlinedTextField(
