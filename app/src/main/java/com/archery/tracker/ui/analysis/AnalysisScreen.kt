@@ -21,6 +21,11 @@ import com.archery.tracker.data.remote.PatternsViewDto
 import com.archery.tracker.data.remote.TrendViewDto
 import com.archery.tracker.di.AppContainer
 
+// Display-only rounding to one decimal place — not a statistics recomputation,
+// every underlying number still comes straight from the server-computed DTO.
+private fun fmt(value: Double?): String = value?.let { "%.1f".format(it) } ?: "—"
+private fun fmt(value: Double): String = "%.1f".format(value)
+
 @Composable
 private fun Bar(fraction: Float) {
     Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(12.dp).background(Color(0xFFFFB020)))
@@ -30,8 +35,8 @@ private fun Bar(fraction: Float) {
 private fun GapCard(view: GapViewDto) {
     Text("Practice vs competition")
     if (view.insufficient != null) { Text(view.insufficient); return }
-    Text("${view.gap}")
-    Text("Practice ${view.practiceAverage} · Competition ${view.competitionAverage}")
+    Text(fmt(view.gap))
+    Text("Practice ${fmt(view.practiceAverage)} · Competition ${fmt(view.competitionAverage)}")
     if (view.arrowSetMismatch) Text("You shoot different arrows in practice and competition.")
 }
 
@@ -47,7 +52,7 @@ private fun TrendCard(view: TrendViewDto) {
 private fun ConsistencyCard(view: ConsistencyViewDto) {
     Text("Consistency")
     if (view.insufficient != null) { Text(view.insufficient); return }
-    Text("X rate ${view.xRate}% · 10+X rate ${view.tenPlusXRate}% · average arrow ${view.averageArrowValue}")
+    Text("X rate ${fmt(view.xRate)}% · 10+X rate ${fmt(view.tenPlusXRate)}% · average arrow ${fmt(view.averageArrowValue)}")
     val maxCount = (view.distribution.maxOfOrNull { it.count } ?: 0).coerceAtLeast(1)
     view.distribution.forEach { bucket ->
         val label = if (bucket.value == 0) "M" else bucket.value.toString()
@@ -62,12 +67,12 @@ private fun PatternsCard(view: PatternsViewDto) {
     if (view.insufficient != null) { Text(view.insufficient); return }
     Text("Average by end position")
     view.byEndPosition.forEach { entry ->
-        Text("End ${entry.position}: ${entry.average}")
+        Text("End ${entry.position}: ${fmt(entry.average)}")
         Bar((entry.average / 60).toFloat())
     }
     Text("Average by round position")
     view.byRoundPosition.forEach { entry ->
-        Text("Round ${entry.position}: ${entry.average}")
+        Text("Round ${entry.position}: ${fmt(entry.average)}")
         Bar((entry.average / 360).toFloat())
     }
 }
