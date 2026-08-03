@@ -1,9 +1,11 @@
 package com.archery.tracker.ui.livescoring
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -12,12 +14,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.archery.tracker.core.ARROWS_PER_END
 import com.archery.tracker.di.AppContainer
+import com.archery.tracker.ui.sessiondetail.arrowLabel
 
 private data class Key(val label: String, val value: Int, val isX: Boolean)
 
@@ -47,6 +52,16 @@ fun LiveScoringScreenContent(viewModel: LiveScoringViewModel) {
 
     Column(Modifier.padding(16.dp)) {
         Text("Round ${state.roundIndex}")
+
+        val currentEndArrows = state.arrows.drop((state.arrows.size / ARROWS_PER_END) * ARROWS_PER_END)
+        Row {
+            repeat(ARROWS_PER_END) { slot ->
+                Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                    Text(currentEndArrows.getOrNull(slot)?.let(::arrowLabel) ?: "–")
+                }
+            }
+        }
+
         Text("End total: ${state.currentEndTotal}")
         Text("Round total: ${state.roundTotal}")
 
