@@ -1,7 +1,10 @@
 package com.archery.tracker.core
 
+import kotlinx.serialization.Serializable
+
 typealias ArrowValue = Int
 
+@Serializable
 data class Arrow(
     val value: ArrowValue,
     val isX: Boolean,
