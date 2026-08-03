@@ -9,7 +9,6 @@ import com.archery.tracker.core.Arrow
 import com.archery.tracker.core.ArrowValue
 import com.archery.tracker.core.Round
 import com.archery.tracker.core.TargetPosition
-import com.archery.tracker.core.endTotals
 import com.archery.tracker.core.roundTotal
 import com.archery.tracker.data.repository.ArcheryRepository
 import com.archery.tracker.sync.enqueueSync
@@ -53,9 +52,10 @@ class LiveScoringViewModel(
     }
 
     private fun updateState(arrows: List<Arrow>) {
+        val currentEnd = arrows.drop((arrows.size / ARROWS_PER_END) * ARROWS_PER_END)
         _uiState.value = _uiState.value.copy(
             arrows = arrows,
-            currentEndTotal = endTotals(arrows).lastOrNull() ?: 0,
+            currentEndTotal = currentEnd.sumOf { it.value },
             roundTotal = roundTotal(arrows),
         )
     }

@@ -11,21 +11,33 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
+data class SessionListEntry(val sessionWithRounds: SessionWithRounds, val isDirty: Boolean)
+
 open class ArcheryRepository(
     private val dao: ArcheryDao,
     private val api: ArcheryApi,
 ) {
 
-    fun sessions(): Flow<List<SessionWithRounds>> =
+    /**
+     * Sessions with their rounds and per-session sync status, recomputed whenever either the
+     * sessions or the rounds table changes. Dirty state comes from the same query pass, so callers
+     * that need it (the history list) don't issue extra dirty-scan queries per emission.
+     */
+    fun sessionList(): Flow<List<SessionListEntry>> =
         combine(dao.getAllSessions(), dao.getAllRounds()) { sessionEntities, roundEntities ->
             val roundsBySession = roundEntities.groupBy { it.sessionId }
             sessionEntities.map { entity ->
-                val rounds = (roundsBySession[entity.id] ?: emptyList())
-                    .sortedBy { it.index }
-                    .map { it.toDomain() }
-                SessionWithRounds(entity.toDomain(), rounds)
+                val roundEntities = (roundsBySession[entity.id] ?: emptyList()).sortedBy { it.index }
+                val isDirty = entity.dirty || roundEntities.any { it.dirty }
+                SessionListEntry(
+                    SessionWithRounds(entity.toDomain(), roundEntities.map { it.toDomain() }),
+                    isDirty,
+                )
             }
         }
+
+    fun sessions(): Flow<List<SessionWithRounds>> =
+        sessionList().map { entries -> entries.map { it.sessionWithRounds } }
 
     open suspend fun createSessionWithFirstRound(session: Session, firstRound: Round) {
         dao.upsertSession(session.toEntity(dirty = true))
@@ -59,12 +71,6 @@ open class ArcheryRepository(
 
         dirtySessions.forEach { dao.clearSessionDirty(it.id) }
         dirtyRounds.forEach { dao.clearRoundDirty(it.id) }
-    }
-
-    suspend fun hasUnsyncedData(sessionId: String): Boolean {
-        val sessionDirty = dao.getDirtySessions().any { it.id == sessionId }
-        val roundsDirty = dao.getDirtyRounds().any { it.sessionId == sessionId }
-        return sessionDirty || roundsDirty
     }
 
     suspend fun stats(

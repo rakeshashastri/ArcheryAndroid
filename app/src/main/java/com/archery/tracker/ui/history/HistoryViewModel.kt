@@ -18,14 +18,14 @@ class HistoryViewModel(private val repository: ArcheryRepository) : ViewModel() 
 
     init {
         viewModelScope.launch {
-            repository.sessions().collect { sessions ->
-                _rows.value = sessions
-                    .sortedByDescending { it.session.date }
-                    .map { swr ->
+            repository.sessionList().collect { entries ->
+                _rows.value = entries
+                    .sortedByDescending { it.sessionWithRounds.session.date }
+                    .map { entry ->
                         HistoryRow(
-                            session = swr.session,
-                            summary = summarise(swr),
-                            isDirty = repository.hasUnsyncedData(swr.session.id),
+                            session = entry.sessionWithRounds.session,
+                            summary = summarise(entry.sessionWithRounds),
+                            isDirty = entry.isDirty,
                         )
                     }
             }

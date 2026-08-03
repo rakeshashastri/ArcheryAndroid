@@ -116,7 +116,7 @@ private fun HistoryCard(row: HistoryRow, onClick: () -> Unit) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                             Icon(
                                 Icons.Filled.CloudOff,
-                                contentDescription = "Not yet synced",
+                                contentDescription = null,
                                 modifier = Modifier.size(16.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
