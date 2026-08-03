@@ -8,7 +8,6 @@ import com.archery.tracker.core.ARROWS_PER_ROUND
 import com.archery.tracker.core.Arrow
 import com.archery.tracker.core.ArrowValue
 import com.archery.tracker.core.Round
-import com.archery.tracker.core.SessionType
 import com.archery.tracker.core.TargetPosition
 import com.archery.tracker.core.endTotals
 import com.archery.tracker.core.roundTotal
@@ -39,7 +38,6 @@ class LiveScoringViewModel(
     private val _uiState = MutableStateFlow(LiveScoringUiState())
     val uiState: StateFlow<LiveScoringUiState> = _uiState.asStateFlow()
 
-    private var sessionType = SessionType.PRACTICE
     private var roundIndex = 1
     private var targetPosition = TargetPosition.A
 
@@ -47,7 +45,6 @@ class LiveScoringViewModel(
         viewModelScope.launch {
             val sessionWithRounds = repository.sessions().first().first { it.session.id == sessionId }
             val round = sessionWithRounds.rounds.first { it.id == roundId }
-            sessionType = sessionWithRounds.session.type
             roundIndex = round.index
             targetPosition = round.targetPosition
             updateState(round.arrows)
