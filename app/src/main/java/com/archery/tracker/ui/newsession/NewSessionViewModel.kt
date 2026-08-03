@@ -27,6 +27,7 @@ data class NewSessionUiState(
     val timeOfDay: TimeOfDay = TimeOfDay.MORNING,
     val targetPosition: TargetPosition = TargetPosition.A,
     val arrowSet: String = "",
+    val arrowSetSuggestions: List<String> = emptyList(),
     val poundage: Double = 50.0,
     val error: String? = null,
     val started: Boolean = false,
@@ -51,8 +52,14 @@ class NewSessionViewModel(
         viewModelScope.launch {
             val sessions = repository.sessions().first()
             val defaults = deriveDefaults(sessions, _uiState.value.type)
+            val suggestions = sessions
+                .sortedByDescending { it.session.date }
+                .map { it.session.arrowSet }
+                .filter { it.isNotBlank() }
+                .distinct()
             _uiState.value = _uiState.value.copy(
                 arrowSet = if (arrowSetEdited) _uiState.value.arrowSet else defaults.arrowSet,
+                arrowSetSuggestions = suggestions,
                 poundage = if (poundageEdited) _uiState.value.poundage else defaults.poundage,
             )
         }

@@ -1,6 +1,7 @@
 package com.archery.tracker.ui.livescoring
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
@@ -58,7 +59,7 @@ class LiveScoringScreenTest {
         composeRule.onNodeWithText("9").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("End total: 27").assertExists()
+        composeRule.onNodeWithContentDescription("End total: 27").assertExists()
 
         val persisted = runBlocking { db.archeryDao().getRoundsForSession("s1")[0] }
         assertEquals(3, persisted.arrows.size)
@@ -76,6 +77,6 @@ class LiveScoringScreenTest {
         composeRule.onNodeWithText("Undo").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("End total: 9").assertExists()
+        composeRule.onNodeWithContentDescription("End total: 9").assertExists()
     }
 }

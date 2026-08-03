@@ -1,6 +1,7 @@
 package com.archery.tracker.ui.analysis
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +30,9 @@ import com.archery.tracker.data.remote.GapViewDto
 import com.archery.tracker.data.remote.PatternsViewDto
 import com.archery.tracker.data.remote.TrendViewDto
 import com.archery.tracker.di.AppContainer
+import com.archery.tracker.ui.theme.Spacing
+
+private const val MIN_ROUNDS_FOR_ANALYSIS = 3
 
 private fun fmt(value: Double?): String = value?.let { "%.1f".format(it) } ?: "—"
 private fun fmt(value: Double): String = "%.1f".format(value)
@@ -56,10 +60,10 @@ private fun Bar(fraction: Float) {
 @Composable
 private fun AnalysisCard(content: @Composable () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Column(Modifier.padding(16.dp)) { content() }
+        Column(Modifier.padding(Spacing.l), verticalArrangement = Arrangement.spacedBy(Spacing.s)) { content() }
     }
 }
 
@@ -67,7 +71,7 @@ private fun AnalysisCard(content: @Composable () -> Unit) {
 private fun GapCard(view: GapViewDto) = AnalysisCard {
     SectionTitle("Practice vs competition")
     if (view.insufficient != null) { InsufficientData(view.insufficient); return@AnalysisCard }
-    Text(fmt(view.gap), style = MaterialTheme.typography.headlineSmall)
+    Text(fmt(view.gap), style = MaterialTheme.typography.displaySmall)
     Text(
         "Practice ${fmt(view.practiceAverage)} · Competition ${fmt(view.competitionAverage)}",
         style = MaterialTheme.typography.bodyMedium,
@@ -128,6 +132,19 @@ private fun PatternsCard(view: PatternsViewDto) = AnalysisCard {
     }
 }
 
+@Composable
+private fun NotEnoughData(roundCount: Int) = AnalysisCard {
+    SectionTitle("Keep logging")
+    val remaining = MIN_ROUNDS_FOR_ANALYSIS - roundCount
+    Text(
+        "You've logged $roundCount ${if (roundCount == 1) "round" else "rounds"}. " +
+            "Log $remaining more ${if (remaining == 1) "round" else "rounds"} to unlock your analysis.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Bar(roundCount.toFloat() / MIN_ROUNDS_FOR_ANALYSIS)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisScreen(container: AppContainer) {
@@ -139,18 +156,23 @@ fun AnalysisScreen(container: AppContainer) {
             Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(Spacing.screen)
                 .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             state.error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-                Button(onClick = viewModel::load, modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)) { Text("Try again") }
+                Button(onClick = viewModel::load, modifier = Modifier.padding(top = Spacing.s)) { Text("Try again") }
             }
             state.stats?.let { stats ->
-                GapCard(stats.gap)
-                TrendCard(stats.trend)
-                ConsistencyCard(stats.consistency)
-                PatternsCard(stats.patterns)
+                if (stats.roundCount < MIN_ROUNDS_FOR_ANALYSIS) {
+                    NotEnoughData(stats.roundCount)
+                } else {
+                    GapCard(stats.gap)
+                    TrendCard(stats.trend)
+                    ConsistencyCard(stats.consistency)
+                    PatternsCard(stats.patterns)
+                }
             }
         }
     }
