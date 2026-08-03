@@ -30,7 +30,7 @@
 - Statistics (rolling averages, gap, consistency, patterns) are never recomputed on-device — `GET /stats` is called live and requires connectivity; there is no offline analysis cache.
 - The deployed backend's base URL is `https://archeryapp-60081207448.development.catalystserverless.in/server/api/`.
 - Query parameters for filters use snake_case on the wire (`time_of_day`, `target_position`, `arrow_set`), matching the web client's convention — even though Kotlin field/property names stay camelCase.
-- minSdk 26, targetSdk 35, compileSdk 35.
+- minSdk 26, targetSdk 34, compileSdk 34 (matched to the SDK platforms actually installed locally — verify before deviating).
 - Commit after every task. Conventional Commits style (`feat:`, `test:`, `chore:`).
 - All Compose screens use Material 3 components only — no custom design system, no third-party UI library.
 
@@ -234,12 +234,12 @@ plugins {
 
 android {
     namespace = "com.archery.tracker"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.archery.tracker"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
