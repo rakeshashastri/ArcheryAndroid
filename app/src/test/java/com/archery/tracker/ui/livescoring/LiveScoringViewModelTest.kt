@@ -1,7 +1,12 @@
 package com.archery.tracker.ui.livescoring
 
+import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.Configuration
+import androidx.work.WorkManager
+import androidx.work.testing.SynchronousExecutor
+import androidx.work.testing.WorkManagerTestInitHelper
 import com.archery.tracker.core.Round
 import com.archery.tracker.core.Session
 import com.archery.tracker.core.SessionType
@@ -10,6 +15,8 @@ import com.archery.tracker.core.TimeOfDay
 import com.archery.tracker.data.local.ArcheryDatabase
 import com.archery.tracker.data.repository.ArcheryRepository
 import com.archery.tracker.data.repository.FakeArcheryApi
+import com.archery.tracker.sync.SyncWorker
+import com.archery.tracker.sync.SyncWorkerFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -28,6 +35,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class LiveScoringViewModelTest {
 
+    private lateinit var application: Application
     private lateinit var db: ArcheryDatabase
     private lateinit var api: FakeArcheryApi
     private lateinit var repository: ArcheryRepository
@@ -38,7 +46,8 @@ class LiveScoringViewModelTest {
     @Before
     fun setUp() = runTest(dispatcher) {
         Dispatchers.setMain(dispatcher)
-        db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), ArcheryDatabase::class.java)
+        application = ApplicationProvider.getApplicationContext()
+        db = Room.inMemoryDatabaseBuilder(application, ArcheryDatabase::class.java)
             .allowMainThreadQueries()
             .setQueryExecutor { it.run() }
             .setTransactionExecutor { it.run() }
@@ -52,6 +61,12 @@ class LiveScoringViewModelTest {
         repository.syncDirty()
         dispatcher.scheduler.advanceUntilIdle()
         api.syncCalls.clear()
+
+        val workManagerConfig = Configuration.Builder()
+            .setExecutor(SynchronousExecutor())
+            .setWorkerFactory(SyncWorkerFactory(repository))
+            .build()
+        WorkManagerTestInitHelper.initializeTestWorkManager(application, workManagerConfig)
     }
 
     @After
@@ -62,7 +77,7 @@ class LiveScoringViewModelTest {
 
     @Test
     fun `each tap is persisted to Room before anything else`() = runTest(dispatcher) {
-        val viewModel = LiveScoringViewModel(repository, sessionId, roundId)
+        val viewModel = LiveScoringViewModel(application, repository, sessionId, roundId)
         dispatcher.scheduler.advanceUntilIdle()
 
         viewModel.add(9, isX = false)
@@ -75,7 +90,7 @@ class LiveScoringViewModelTest {
 
     @Test
     fun `shows a running end total as arrows are entered`() = runTest(dispatcher) {
-        val viewModel = LiveScoringViewModel(repository, sessionId, roundId)
+        val viewModel = LiveScoringViewModel(application, repository, sessionId, roundId)
         dispatcher.scheduler.advanceUntilIdle()
 
         repeat(3) { viewModel.add(9, isX = false) }
@@ -86,21 +101,24 @@ class LiveScoringViewModelTest {
 
     @Test
     fun `triggers a sync only once a full end of six arrows is reached`() = runTest(dispatcher) {
-        val viewModel = LiveScoringViewModel(repository, sessionId, roundId)
+        val viewModel = LiveScoringViewModel(application, repository, sessionId, roundId)
         dispatcher.scheduler.advanceUntilIdle()
 
         repeat(5) { viewModel.add(9, isX = false) }
         dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(api.syncCalls.isEmpty())
+        assertTrue(pendingSyncWork().isEmpty())
 
         viewModel.add(9, isX = false)
         dispatcher.scheduler.advanceUntilIdle()
-        assertEquals(1, api.syncCalls.size)
+        assertEquals(1, pendingSyncWork().size)
     }
+
+    private fun pendingSyncWork() =
+        WorkManager.getInstance(application).getWorkInfosByTag(SyncWorker::class.java.name).get()
 
     @Test
     fun `undoes the last arrow`() = runTest(dispatcher) {
-        val viewModel = LiveScoringViewModel(repository, sessionId, roundId)
+        val viewModel = LiveScoringViewModel(application, repository, sessionId, roundId)
         dispatcher.scheduler.advanceUntilIdle()
 
         repeat(2) { viewModel.add(9, isX = false) }
@@ -114,7 +132,7 @@ class LiveScoringViewModelTest {
 
     @Test
     fun `stops accepting arrows at 36`() = runTest(dispatcher) {
-        val viewModel = LiveScoringViewModel(repository, sessionId, roundId)
+        val viewModel = LiveScoringViewModel(application, repository, sessionId, roundId)
         dispatcher.scheduler.advanceUntilIdle()
 
         repeat(36) { viewModel.add(5, isX = false) }

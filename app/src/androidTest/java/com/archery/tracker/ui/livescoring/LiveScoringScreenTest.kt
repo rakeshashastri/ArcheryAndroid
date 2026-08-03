@@ -49,7 +49,7 @@ class LiveScoringScreenTest {
 
     @Test
     fun tappingNineUpdatesTheDisplayedEndTotalAndPersistsToRoom() {
-        val viewModel = LiveScoringViewModel(repository, "s1", "r1")
+        val viewModel = LiveScoringViewModel(ApplicationProvider.getApplicationContext(), repository, "s1", "r1")
         composeRule.setContent { LiveScoringScreenContent(viewModel) }
         composeRule.waitForIdle()
 
@@ -66,7 +66,7 @@ class LiveScoringScreenTest {
 
     @Test
     fun undoRemovesTheLastArrow() {
-        val viewModel = LiveScoringViewModel(repository, "s1", "r1")
+        val viewModel = LiveScoringViewModel(ApplicationProvider.getApplicationContext(), repository, "s1", "r1")
         composeRule.setContent { LiveScoringScreenContent(viewModel) }
         composeRule.waitForIdle()
 

@@ -1,6 +1,7 @@
 package com.archery.tracker.ui.livescoring
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.archery.tracker.core.ARROWS_PER_END
 import com.archery.tracker.core.ARROWS_PER_ROUND
@@ -12,6 +13,7 @@ import com.archery.tracker.core.TargetPosition
 import com.archery.tracker.core.endTotals
 import com.archery.tracker.core.roundTotal
 import com.archery.tracker.data.repository.ArcheryRepository
+import com.archery.tracker.sync.enqueueSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,10 +30,11 @@ data class LiveScoringUiState(
 )
 
 class LiveScoringViewModel(
+    application: Application,
     private val repository: ArcheryRepository,
     private val sessionId: String,
     private val roundId: String,
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(LiveScoringUiState())
     val uiState: StateFlow<LiveScoringUiState> = _uiState.asStateFlow()
@@ -82,7 +85,7 @@ class LiveScoringViewModel(
             )
             repository.saveRound(round)
             if (next.size % ARROWS_PER_END == 0 && next.isNotEmpty()) {
-                repository.syncDirty()
+                enqueueSync(getApplication())
             }
         }
     }

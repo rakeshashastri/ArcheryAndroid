@@ -1,5 +1,6 @@
 package com.archery.tracker.ui.livescoring
 
+import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -27,8 +29,9 @@ private val KEYS = listOf(
 
 @Composable
 fun LiveScoringScreen(container: AppContainer, sessionId: String, roundId: String, navController: NavController) {
+    val application = LocalContext.current.applicationContext as Application
     val viewModel = viewModel<LiveScoringViewModel>(key = "$sessionId-$roundId") {
-        LiveScoringViewModel(container.repository, sessionId, roundId)
+        LiveScoringViewModel(application, container.repository, sessionId, roundId)
     }
     LiveScoringScreenContent(viewModel)
 }
