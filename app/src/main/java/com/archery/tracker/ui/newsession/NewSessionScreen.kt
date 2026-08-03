@@ -97,10 +97,15 @@ fun NewSessionScreen(container: AppContainer, navController: NavController) {
         OutlinedTextField(value = state.date, onValueChange = viewModel::updateDate, label = { Text("Date") })
         OutlinedTextField(value = state.arrowSet, onValueChange = viewModel::updateArrowSet, label = { Text("Arrow set") })
         var poundageText by remember { mutableStateOf(state.poundage.toString()) }
+        var poundageEditedLocally by remember { mutableStateOf(false) }
+        LaunchedEffect(state.poundage) {
+            if (!poundageEditedLocally) poundageText = state.poundage.toString()
+        }
         OutlinedTextField(
             value = poundageText,
             onValueChange = { text ->
                 poundageText = text
+                poundageEditedLocally = true
                 text.toDoubleOrNull()?.let(viewModel::updatePoundage)
             },
             label = { Text("Poundage") },
