@@ -122,4 +122,20 @@ class SessionDetailViewModelTest {
         assertNotNull(viewModel.uiState.value.deleteError)
         assertEquals(1, db.archeryDao().getAllSessions().first().size)
     }
+
+    @Test
+    fun `a stale delete error is cleared once a round is successfully added`() = runTest(dispatcher) {
+        api.deleteShouldFail = true
+        val viewModel = SessionDetailViewModel(application, repository, "s1")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.deleteSession {}
+        dispatcher.scheduler.advanceUntilIdle()
+        assertNotNull(viewModel.uiState.value.deleteError)
+
+        viewModel.addRound()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.deleteError)
+    }
 }

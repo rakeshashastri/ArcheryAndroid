@@ -58,6 +58,7 @@ class SessionDetailViewModel(
         )
         repository.saveRound(round)
         enqueueSync(getApplication())
+        _uiState.value = _uiState.value.copy(deleteError = null)
         return newRoundId
     }
 
