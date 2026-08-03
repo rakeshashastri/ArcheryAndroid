@@ -1,5 +1,6 @@
 package com.archery.tracker.ui.history
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +46,7 @@ fun HistoryScreen(container: AppContainer, navController: NavController) {
                     Column(
                         Modifier
                             .fillMaxWidth()
+                            .clickable { navController.navigate(sessionDetailRoute(row.session.id)) }
                             .padding(16.dp),
                     ) {
                         Text("${row.session.date} — ${row.session.type}")
