@@ -72,6 +72,10 @@ class NewSessionViewModel(
     }
 
     fun start() {
+        if (_uiState.value.arrowSet.isBlank()) {
+            _uiState.value = _uiState.value.copy(error = "Enter an arrow set before starting.")
+            return
+        }
         viewModelScope.launch {
             val state = _uiState.value
             val now = Instant.now().toString()

@@ -114,6 +114,6 @@ fun NewSessionScreen(container: AppContainer, navController: NavController) {
             label = { Text("Poundage") },
         )
 
-        Button(onClick = viewModel::start) { Text("Start round 1") }
+        Button(onClick = viewModel::start, enabled = state.arrowSet.isNotBlank()) { Text("Start round 1") }
     }
 }

@@ -25,6 +25,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -84,6 +85,7 @@ class NewSessionViewModelTest {
         val flakyRepository = FlakyRepository(db.archeryDao(), FakeArcheryApi())
         val viewModel = NewSessionViewModel(application, flakyRepository)
         dispatcher.scheduler.advanceUntilIdle()
+        viewModel.updateArrowSet("ACC")
 
         viewModel.start()
         dispatcher.scheduler.advanceUntilIdle()
@@ -114,6 +116,7 @@ class NewSessionViewModelTest {
     fun `pre-fills poundage from the most recent prior session`() = runTest(dispatcher) {
         // Seed one prior session with a distinctive poundage.
         val seedViewModel = NewSessionViewModel(application, repository)
+        seedViewModel.updateArrowSet("ACC")
         seedViewModel.updatePoundage(53.0)
         seedViewModel.start()
         dispatcher.scheduler.advanceUntilIdle()
@@ -121,6 +124,19 @@ class NewSessionViewModelTest {
         val viewModel = NewSessionViewModel(application, repository)
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(53.0, viewModel.uiState.value.poundage, 0.0)
+    }
+
+    @Test
+    fun `start refuses to create a session with a blank arrow set`() = runTest(dispatcher) {
+        val viewModel = NewSessionViewModel(application, repository)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.start()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNotNull(viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.started)
+        assertEquals(0, db.archeryDao().getAllSessions().first().size)
     }
 }
 
