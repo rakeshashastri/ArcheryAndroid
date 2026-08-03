@@ -1,6 +1,7 @@
 package com.archery.tracker.ui.newsession
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.archery.tracker.core.Round
 import com.archery.tracker.core.Session
@@ -8,19 +9,21 @@ import com.archery.tracker.core.SessionType
 import com.archery.tracker.core.TargetPosition
 import com.archery.tracker.core.TimeOfDay
 import com.archery.tracker.data.repository.ArcheryRepository
+import com.archery.tracker.sync.enqueueSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 data class NewSessionUiState(
     val sessionId: String = UUID.randomUUID().toString(),
     val roundId: String = UUID.randomUUID().toString(),
     val type: SessionType = SessionType.PRACTICE,
-    val date: String = Instant.now().toString().substring(0, 10),
+    val date: String = LocalDate.now().toString(),
     val timeOfDay: TimeOfDay = TimeOfDay.MORNING,
     val targetPosition: TargetPosition = TargetPosition.A,
     val arrowSet: String = "",
@@ -29,7 +32,10 @@ data class NewSessionUiState(
     val started: Boolean = false,
 )
 
-class NewSessionViewModel(private val repository: ArcheryRepository) : ViewModel() {
+class NewSessionViewModel(
+    application: Application,
+    private val repository: ArcheryRepository,
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(NewSessionUiState())
     val uiState: StateFlow<NewSessionUiState> = _uiState.asStateFlow()
@@ -79,6 +85,7 @@ class NewSessionViewModel(private val repository: ArcheryRepository) : ViewModel
             )
             try {
                 repository.createSessionWithFirstRound(session, round)
+                enqueueSync(getApplication())
                 _uiState.value = _uiState.value.copy(error = null, started = true)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Could not start the session. Check your connection and try again.")

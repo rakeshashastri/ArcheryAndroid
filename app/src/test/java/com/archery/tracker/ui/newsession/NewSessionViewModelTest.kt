@@ -1,7 +1,11 @@
 package com.archery.tracker.ui.newsession
 
+import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.Configuration
+import androidx.work.testing.SynchronousExecutor
+import androidx.work.testing.WorkManagerTestInitHelper
 import com.archery.tracker.core.Round
 import com.archery.tracker.core.Session
 import com.archery.tracker.core.SessionType
@@ -10,6 +14,7 @@ import com.archery.tracker.data.local.ArcheryDatabase
 import com.archery.tracker.data.remote.ArcheryApi
 import com.archery.tracker.data.repository.ArcheryRepository
 import com.archery.tracker.data.repository.FakeArcheryApi
+import com.archery.tracker.sync.SyncWorkerFactory
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +36,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class NewSessionViewModelTest {
 
+    private lateinit var application: Application
     private lateinit var db: ArcheryDatabase
     private lateinit var repository: ArcheryRepository
     private val dispatcher = StandardTestDispatcher()
@@ -38,12 +44,19 @@ class NewSessionViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), ArcheryDatabase::class.java)
+        application = ApplicationProvider.getApplicationContext()
+        db = Room.inMemoryDatabaseBuilder(application, ArcheryDatabase::class.java)
             .allowMainThreadQueries()
             .setQueryExecutor { it.run() }
             .setTransactionExecutor { it.run() }
             .build()
         repository = ArcheryRepository(db.archeryDao(), FakeArcheryApi())
+
+        val workManagerConfig = Configuration.Builder()
+            .setExecutor(SynchronousExecutor())
+            .setWorkerFactory(SyncWorkerFactory(repository))
+            .build()
+        WorkManagerTestInitHelper.initializeTestWorkManager(application, workManagerConfig)
     }
 
     @After
@@ -54,7 +67,7 @@ class NewSessionViewModelTest {
 
     @Test
     fun `start creates a session and its first round together`() = runTest(dispatcher) {
-        val viewModel = NewSessionViewModel(repository)
+        val viewModel = NewSessionViewModel(application, repository)
         viewModel.updateArrowSet("ACC")
         viewModel.start()
         dispatcher.scheduler.advanceUntilIdle()
@@ -69,7 +82,7 @@ class NewSessionViewModelTest {
     @Test
     fun `start reuses the same session id across a retry so a partial failure cannot orphan a session`() = runTest(dispatcher) {
         val flakyRepository = FlakyRepository(db.archeryDao(), FakeArcheryApi())
-        val viewModel = NewSessionViewModel(flakyRepository)
+        val viewModel = NewSessionViewModel(application, flakyRepository)
         dispatcher.scheduler.advanceUntilIdle()
 
         viewModel.start()
@@ -100,12 +113,12 @@ class NewSessionViewModelTest {
     @Test
     fun `pre-fills poundage from the most recent prior session`() = runTest(dispatcher) {
         // Seed one prior session with a distinctive poundage.
-        val seedViewModel = NewSessionViewModel(repository)
+        val seedViewModel = NewSessionViewModel(application, repository)
         seedViewModel.updatePoundage(53.0)
         seedViewModel.start()
         dispatcher.scheduler.advanceUntilIdle()
 
-        val viewModel = NewSessionViewModel(repository)
+        val viewModel = NewSessionViewModel(application, repository)
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(53.0, viewModel.uiState.value.poundage, 0.0)
     }

@@ -1,5 +1,6 @@
 package com.archery.tracker.ui.newsession
 
+import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -18,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -30,7 +32,8 @@ import com.archery.tracker.ui.liveScoringRoute
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewSessionScreen(container: AppContainer, navController: NavController) {
-    val viewModel = viewModel<NewSessionViewModel> { NewSessionViewModel(container.repository) }
+    val application = LocalContext.current.applicationContext as Application
+    val viewModel = viewModel<NewSessionViewModel> { NewSessionViewModel(application, container.repository) }
     val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(state.started) {
