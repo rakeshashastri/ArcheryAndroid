@@ -57,6 +57,12 @@ open class ArcheryRepository(
         dirtyRounds.forEach { dao.clearRoundDirty(it.id) }
     }
 
+    suspend fun hasUnsyncedData(sessionId: String): Boolean {
+        val sessionDirty = dao.getDirtySessions().any { it.id == sessionId }
+        val roundsDirty = dao.getDirtyRounds().any { it.sessionId == sessionId }
+        return sessionDirty || roundsDirty
+    }
+
     suspend fun stats(
         type: String? = null, from: String? = null, to: String? = null,
         timeOfDay: String? = null, targetPosition: String? = null, arrowSet: String? = null,
