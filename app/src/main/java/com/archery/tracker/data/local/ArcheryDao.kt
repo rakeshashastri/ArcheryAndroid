@@ -21,6 +21,9 @@ interface ArcheryDao {
     @Query("SELECT * FROM rounds WHERE sessionId = :sessionId ORDER BY `index` ASC")
     suspend fun getRoundsForSession(sessionId: String): List<RoundEntity>
 
+    @Query("SELECT * FROM rounds ORDER BY `index` ASC")
+    fun getAllRounds(): Flow<List<RoundEntity>>
+
     @Query("SELECT * FROM sessions WHERE dirty = 1")
     suspend fun getDirtySessions(): List<SessionEntity>
 

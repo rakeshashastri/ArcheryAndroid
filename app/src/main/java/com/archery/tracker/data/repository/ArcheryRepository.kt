@@ -8,6 +8,7 @@ import com.archery.tracker.data.remote.ArcheryApi
 import com.archery.tracker.data.remote.StatsResponseDto
 import com.archery.tracker.data.remote.SyncRequestDto
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 open class ArcheryRepository(
@@ -16,9 +17,12 @@ open class ArcheryRepository(
 ) {
 
     fun sessions(): Flow<List<SessionWithRounds>> =
-        dao.getAllSessions().map { sessionEntities ->
+        combine(dao.getAllSessions(), dao.getAllRounds()) { sessionEntities, roundEntities ->
+            val roundsBySession = roundEntities.groupBy { it.sessionId }
             sessionEntities.map { entity ->
-                val rounds = dao.getRoundsForSession(entity.id).map { it.toDomain() }
+                val rounds = (roundsBySession[entity.id] ?: emptyList())
+                    .sortedBy { it.index }
+                    .map { it.toDomain() }
                 SessionWithRounds(entity.toDomain(), rounds)
             }
         }
