@@ -31,6 +31,9 @@ fun validateSession(session: Session, rounds: List<Round>): List<ValidationError
     if (rounds.isEmpty()) {
         errors.add(ValidationError("SESSION_NO_ROUNDS", "A session must contain at least one started round"))
     }
+    // A session with fewer rounds than its type's limit is still valid, just incomplete —
+    // only exceeding the limit is an error. Getting this backwards (rejecting anything
+    // short of the limit) was a real bug in the web client's first draft.
     val limit = ROUNDS_PER_SESSION.getValue(session.type)
     if (rounds.size > limit) {
         errors.add(ValidationError("SESSION_ROUND_COUNT", "A ${session.type} session holds at most $limit rounds"))
