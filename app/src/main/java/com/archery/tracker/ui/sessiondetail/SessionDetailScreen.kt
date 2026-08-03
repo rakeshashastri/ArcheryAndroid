@@ -1,5 +1,6 @@
 package com.archery.tracker.ui.sessiondetail
 
+import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -26,8 +28,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SessionDetailScreen(container: AppContainer, sessionId: String, navController: NavController) {
+    val application = LocalContext.current.applicationContext as Application
     val viewModel = viewModel<SessionDetailViewModel>(key = sessionId) {
-        SessionDetailViewModel(container.repository, sessionId)
+        SessionDetailViewModel(application, container.repository, sessionId)
     }
     val state by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
@@ -62,6 +65,7 @@ fun SessionDetailScreen(container: AppContainer, sessionId: String, navControlle
             }) { Text("Add round ${state.rounds.size + 1}") }
         }
 
+        state.deleteError?.let { Text(it) }
         Button(onClick = { showDeleteConfirm = true }) { Text("Delete session") }
 
         if (showDeleteConfirm) {

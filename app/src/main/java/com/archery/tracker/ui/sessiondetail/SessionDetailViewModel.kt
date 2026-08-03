@@ -1,12 +1,14 @@
 package com.archery.tracker.ui.sessiondetail
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.archery.tracker.core.ROUNDS_PER_SESSION
 import com.archery.tracker.core.Round
 import com.archery.tracker.core.Session
 import com.archery.tracker.core.TargetPosition
 import com.archery.tracker.data.repository.ArcheryRepository
+import com.archery.tracker.sync.enqueueSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,12 +20,14 @@ data class SessionDetailUiState(
     val session: Session? = null,
     val rounds: List<Round> = emptyList(),
     val canAddRound: Boolean = false,
+    val deleteError: String? = null,
 )
 
 class SessionDetailViewModel(
+    application: Application,
     private val repository: ArcheryRepository,
     private val sessionId: String,
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SessionDetailUiState())
     val uiState: StateFlow<SessionDetailUiState> = _uiState.asStateFlow()
@@ -33,7 +37,7 @@ class SessionDetailViewModel(
             repository.sessions().collect { sessions ->
                 val match = sessions.firstOrNull { it.session.id == sessionId } ?: return@collect
                 val limit = ROUNDS_PER_SESSION.getValue(match.session.type)
-                _uiState.value = SessionDetailUiState(
+                _uiState.value = _uiState.value.copy(
                     session = match.session,
                     rounds = match.rounds.sortedBy { it.index },
                     canAddRound = match.rounds.size < limit,
@@ -53,13 +57,22 @@ class SessionDetailViewModel(
             arrows = emptyList(), notes = null, updatedAt = Instant.now().toString(),
         )
         repository.saveRound(round)
+        enqueueSync(getApplication())
         return newRoundId
     }
 
     fun deleteSession(onDeleted: () -> Unit) {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(deleteError = null)
             val result = repository.deleteSession(sessionId)
-            if (result.isSuccess) onDeleted()
+            result.fold(
+                onSuccess = { onDeleted() },
+                onFailure = {
+                    _uiState.value = _uiState.value.copy(
+                        deleteError = "Could not delete this session. Check your connection and try again.",
+                    )
+                },
+            )
         }
     }
 }
