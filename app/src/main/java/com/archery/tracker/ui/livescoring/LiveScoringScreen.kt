@@ -1,20 +1,31 @@
 package com.archery.tracker.ui.livescoring
 
 import android.app.Application
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -22,6 +33,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.archery.tracker.core.ARROWS_PER_END
 import com.archery.tracker.di.AppContainer
+import com.archery.tracker.ui.sessiondetail.ArrowChip
+import com.archery.tracker.ui.sessiondetail.arrowChipColor
+import com.archery.tracker.ui.sessiondetail.arrowChipContentColor
 import com.archery.tracker.ui.sessiondetail.arrowLabel
 
 private data class Key(val label: String, val value: Int, val isX: Boolean)
@@ -32,46 +46,75 @@ private val KEYS = listOf(
     Key("5", 5, false), Key("M", 0, false),
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LiveScoringScreen(container: AppContainer, sessionId: String, roundId: String, navController: NavController) {
     val application = LocalContext.current.applicationContext as Application
     val viewModel = viewModel<LiveScoringViewModel>(key = "$sessionId-$roundId") {
         LiveScoringViewModel(application, container.repository, sessionId, roundId)
     }
-    LiveScoringScreenContent(viewModel)
+    val state by viewModel.uiState.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(if (state.loaded) "Round ${state.roundIndex}" else "Live scoring") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            LiveScoringScreenContent(viewModel, showRoundTitle = false)
+        }
+    }
 }
 
 @Composable
-fun LiveScoringScreenContent(viewModel: LiveScoringViewModel) {
+fun LiveScoringScreenContent(viewModel: LiveScoringViewModel, showRoundTitle: Boolean = true) {
     val state by viewModel.uiState.collectAsState()
 
     if (!state.loaded) {
-        Text("Loading…")
+        Text("Loading…", modifier = Modifier.padding(16.dp))
         return
     }
 
-    Column(Modifier.padding(16.dp)) {
-        Text("Round ${state.roundIndex}")
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (showRoundTitle) {
+            Text("Round ${state.roundIndex}", style = MaterialTheme.typography.titleLarge)
+        }
 
         val currentEndArrows = state.arrows.drop((state.arrows.size / ARROWS_PER_END) * ARROWS_PER_END)
-        Row {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             repeat(ARROWS_PER_END) { slot ->
-                Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                    Text(currentEndArrows.getOrNull(slot)?.let(::arrowLabel) ?: "–")
-                }
+                ArrowChip(currentEndArrows.getOrNull(slot)?.let(::arrowLabel) ?: "–", size = 44)
             }
         }
 
-        Text("End total: ${state.currentEndTotal}")
-        Text("Round total: ${state.roundTotal}")
+        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            Text("End total: ${state.currentEndTotal}", style = MaterialTheme.typography.headlineSmall)
+            Text("Round total: ${state.roundTotal}", style = MaterialTheme.typography.headlineSmall)
+        }
 
-        LazyVerticalGrid(columns = GridCells.Fixed(3)) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             items(KEYS) { key ->
-                Button(onClick = { viewModel.add(key.value, key.isX) }) { Text(key.label) }
+                Button(
+                    onClick = { viewModel.add(key.value, key.isX) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = arrowChipColor(key.label),
+                        contentColor = arrowChipContentColor(key.label),
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                ) { Text(key.label, style = MaterialTheme.typography.titleMedium) }
             }
         }
-        Row {
-            Button(onClick = viewModel::undo) { Text("Undo") }
-        }
+        OutlinedButton(onClick = viewModel::undo, modifier = Modifier.fillMaxWidth()) { Text("Undo") }
     }
 }

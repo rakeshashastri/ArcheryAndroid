@@ -26,7 +26,7 @@ import com.archery.tracker.ui.sessiondetail.SessionDetailScreen
 
 private const val ROUTE_HISTORY = "history"
 private const val ROUTE_ANALYSIS = "analysis"
-private const val ROUTE_NEW_SESSION = "newSession"
+const val ROUTE_NEW_SESSION = "newSession"
 private const val ROUTE_LIVE_SCORING = "liveScoring/{sessionId}/{roundId}"
 private const val ROUTE_SESSION_DETAIL = "sessionDetail/{sessionId}"
 
@@ -41,19 +41,21 @@ fun AppNav(container: AppContainer) {
         bottomBar = {
             val backStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = backStackEntry?.destination?.hierarchy?.firstOrNull()?.route
-            NavigationBar {
-                NavigationBarItem(
-                    selected = currentRoute == ROUTE_HISTORY,
-                    onClick = { navController.navigate(ROUTE_HISTORY) },
-                    icon = { Icon(Icons.Filled.History, contentDescription = "History") },
-                    label = { Text("History") },
-                )
-                NavigationBarItem(
-                    selected = currentRoute == ROUTE_ANALYSIS,
-                    onClick = { navController.navigate(ROUTE_ANALYSIS) },
-                    icon = { Icon(Icons.Filled.BarChart, contentDescription = "Analysis") },
-                    label = { Text("Analysis") },
-                )
+            if (currentRoute == ROUTE_HISTORY || currentRoute == ROUTE_ANALYSIS) {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = currentRoute == ROUTE_HISTORY,
+                        onClick = { navController.navigate(ROUTE_HISTORY) },
+                        icon = { Icon(Icons.Filled.History, contentDescription = "History") },
+                        label = { Text("History") },
+                    )
+                    NavigationBarItem(
+                        selected = currentRoute == ROUTE_ANALYSIS,
+                        onClick = { navController.navigate(ROUTE_ANALYSIS) },
+                        icon = { Icon(Icons.Filled.BarChart, contentDescription = "Analysis") },
+                        label = { Text("Analysis") },
+                    )
+                }
             }
         },
     ) { padding ->
