@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -82,7 +84,7 @@ fun AnalysisScreen(container: AppContainer) {
     val viewModel = viewModel<AnalysisViewModel> { AnalysisViewModel(container.repository) }
     val state by viewModel.uiState.collectAsState()
 
-    Column(Modifier.padding(16.dp)) {
+    Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
         Text("Analysis")
         state.error?.let {
             Text(it)

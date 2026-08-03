@@ -2,6 +2,8 @@ package com.archery.tracker.ui.sessiondetail
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -37,7 +39,7 @@ fun SessionDetailScreen(container: AppContainer, sessionId: String, navControlle
         return
     }
 
-    Column(Modifier.padding(16.dp)) {
+    Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
         Text("${session.date} · ${session.type} · ${session.timeOfDay} · ${session.arrowSet} · ${session.poundage} lb")
 
         state.rounds.forEach { round ->
