@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
+        android:name=".ArcheryApplication"
         android:label="Archery Tracker"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
