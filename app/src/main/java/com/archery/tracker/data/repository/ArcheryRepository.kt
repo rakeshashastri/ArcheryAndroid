@@ -10,7 +10,7 @@ import com.archery.tracker.data.remote.SyncRequestDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class ArcheryRepository(
+open class ArcheryRepository(
     private val dao: ArcheryDao,
     private val api: ArcheryApi,
 ) {
@@ -23,7 +23,7 @@ class ArcheryRepository(
             }
         }
 
-    suspend fun createSessionWithFirstRound(session: Session, firstRound: Round) {
+    open suspend fun createSessionWithFirstRound(session: Session, firstRound: Round) {
         dao.upsertSession(session.toEntity(dirty = true))
         dao.upsertRound(firstRound.toEntity(dirty = true))
     }

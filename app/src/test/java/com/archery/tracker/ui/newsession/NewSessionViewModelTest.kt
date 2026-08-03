@@ -2,10 +2,15 @@ package com.archery.tracker.ui.newsession
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.archery.tracker.core.Round
+import com.archery.tracker.core.Session
 import com.archery.tracker.core.SessionType
+import com.archery.tracker.data.local.ArcheryDao
 import com.archery.tracker.data.local.ArcheryDatabase
+import com.archery.tracker.data.remote.ArcheryApi
 import com.archery.tracker.data.repository.ArcheryRepository
 import com.archery.tracker.data.repository.FakeArcheryApi
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -16,6 +21,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -62,18 +68,37 @@ class NewSessionViewModelTest {
 
     @Test
     fun `start reuses the same session id across a retry so a partial failure cannot orphan a session`() = runTest(dispatcher) {
-        val viewModel = NewSessionViewModel(repository)
-        val idBefore = viewModel.uiState.value.sessionId
+        val flakyRepository = FlakyRepository(db.archeryDao(), FakeArcheryApi())
+        val viewModel = NewSessionViewModel(flakyRepository)
+        dispatcher.scheduler.advanceUntilIdle()
+
         viewModel.start()
         dispatcher.scheduler.advanceUntilIdle()
-        val idAfter = viewModel.uiState.value.sessionId
 
-        assertEquals(idBefore, idAfter)
-        assertNotNull(idBefore)
+        assertNotNull(viewModel.uiState.value.error)
+        assertEquals(0, db.archeryDao().getAllSessions().first().size)
+
+        val sessionIdAfterFailure = viewModel.uiState.value.sessionId
+        val roundIdAfterFailure = viewModel.uiState.value.roundId
+
+        viewModel.start()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.error)
+        assertEquals(sessionIdAfterFailure, viewModel.uiState.value.sessionId)
+        assertEquals(roundIdAfterFailure, viewModel.uiState.value.roundId)
+
+        val sessions = db.archeryDao().getAllSessions().first()
+        assertEquals(1, sessions.size)
+        assertEquals(sessionIdAfterFailure, sessions[0].id)
+
+        val rounds = db.archeryDao().getRoundsForSession(sessionIdAfterFailure)
+        assertEquals(1, rounds.size)
+        assertEquals(roundIdAfterFailure, rounds[0].id)
     }
 
     @Test
-    fun `pre-fills poundage from history on type change`() = runTest(dispatcher) {
+    fun `pre-fills poundage from the most recent prior session`() = runTest(dispatcher) {
         // Seed one prior session with a distinctive poundage.
         val seedViewModel = NewSessionViewModel(repository)
         seedViewModel.updatePoundage(53.0)
@@ -83,5 +108,17 @@ class NewSessionViewModelTest {
         val viewModel = NewSessionViewModel(repository)
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(53.0, viewModel.uiState.value.poundage, 0.0)
+    }
+}
+
+private class FlakyRepository(dao: ArcheryDao, api: ArcheryApi) : ArcheryRepository(dao, api) {
+    private var shouldFailNext = true
+
+    override suspend fun createSessionWithFirstRound(session: Session, firstRound: Round) {
+        if (shouldFailNext) {
+            shouldFailNext = false
+            throw IOException("simulated failure on first attempt")
+        }
+        super.createSessionWithFirstRound(session, firstRound)
     }
 }
