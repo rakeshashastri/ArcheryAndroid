@@ -13,13 +13,18 @@ import retrofit2.Response
 class FakeArcheryApi : ArcheryApi {
     var syncShouldFail = false
     var deleteShouldFail = false
+    var listShouldFail = false
+    var sessionsToReturn: List<SessionWithRoundsDto> = emptyList()
     val syncCalls = mutableListOf<SyncRequestDto>()
     val deleteCalls = mutableListOf<String>()
 
     override suspend fun listSessions(
         type: String?, from: String?, to: String?,
         timeOfDay: String?, targetPosition: String?, arrowSet: String?,
-    ): List<SessionWithRoundsDto> = emptyList()
+    ): List<SessionWithRoundsDto> {
+        if (listShouldFail) throw java.io.IOException("network down")
+        return sessionsToReturn
+    }
 
     override suspend fun putSession(id: String, session: SessionDto): SessionDto = session
 

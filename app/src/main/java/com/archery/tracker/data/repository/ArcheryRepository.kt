@@ -73,6 +73,54 @@ open class ArcheryRepository(
         dirtyRounds.forEach { dao.clearRoundDirty(it.id) }
     }
 
+    /**
+     * Pulls the server's sessions and merges them into Room so sessions created on another device
+     * (e.g. the web client) show up here. Merge rules:
+     *  - A row not present locally is inserted (clean).
+     *  - A non-dirty local row is overwritten only when the server's updatedAt is newer (last-write-wins).
+     *  - A dirty local row (an unpushed local edit) is never overwritten — its pending push wins.
+     *  - A non-dirty local row absent from the server was deleted elsewhere, so it is removed here.
+     *    Sessions with any unpushed (dirty) round are protected from that deletion so a pending edit
+     *    is never lost to a cascade.
+     */
+    suspend fun pullAndMerge(): Result<Unit> = runCatching {
+        val server = api.listSessions()
+        val localSessions = dao.getAllSessionsOnce()
+        val localRounds = dao.getAllRoundsOnce()
+
+        val serverSessionIds = server.mapTo(HashSet()) { it.id }
+        val serverRounds = server.flatMap { it.rounds }
+        val serverRoundIds = serverRounds.mapTo(HashSet()) { it.id }
+        val localSessionById = localSessions.associateBy { it.id }
+        val localRoundById = localRounds.associateBy { it.id }
+
+        for (s in server) {
+            val local = localSessionById[s.id]
+            if (local == null || (!local.dirty && s.updatedAt > local.updatedAt)) {
+                dao.upsertSession(s.toSessionEntity(dirty = false))
+            }
+        }
+        for (r in serverRounds) {
+            val local = localRoundById[r.id]
+            if (local == null || (!local.dirty && r.updatedAt > local.updatedAt)) {
+                dao.upsertRound(r.toEntity(dirty = false))
+            }
+        }
+
+        for (local in localSessions) {
+            val hasDirtyRound = localRounds.any { it.sessionId == local.id && it.dirty }
+            if (!local.dirty && !hasDirtyRound && local.id !in serverSessionIds) {
+                dao.deleteRoundsForSession(local.id)
+                dao.deleteSession(local.id)
+            }
+        }
+        for (local in localRounds) {
+            if (!local.dirty && local.id !in serverRoundIds && local.sessionId in serverSessionIds) {
+                dao.deleteRound(local.id)
+            }
+        }
+    }
+
     suspend fun stats(
         type: String? = null, from: String? = null, to: String? = null,
         timeOfDay: String? = null, targetPosition: String? = null, arrowSet: String? = null,

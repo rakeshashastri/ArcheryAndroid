@@ -11,6 +11,7 @@ import com.archery.tracker.data.local.SessionEntity
 import com.archery.tracker.data.remote.ArrowDto
 import com.archery.tracker.data.remote.RoundDto
 import com.archery.tracker.data.remote.SessionDto
+import com.archery.tracker.data.remote.SessionWithRoundsDto
 
 private fun SessionType.wire(): String = when (this) {
     SessionType.PRACTICE -> "practice"
@@ -63,6 +64,11 @@ fun Session.toDto(): SessionDto = SessionDto(
 )
 
 fun SessionDto.toEntity(dirty: Boolean = false): SessionEntity = SessionEntity(
+    id = id, date = date, type = type, timeOfDay = timeOfDay,
+    arrowSet = arrowSet, poundage = poundage, notes = notes, updatedAt = updatedAt, dirty = dirty,
+)
+
+fun SessionWithRoundsDto.toSessionEntity(dirty: Boolean = false): SessionEntity = SessionEntity(
     id = id, date = date, type = type, timeOfDay = timeOfDay,
     arrowSet = arrowSet, poundage = poundage, notes = notes, updatedAt = updatedAt, dirty = dirty,
 )

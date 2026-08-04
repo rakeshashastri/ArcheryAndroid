@@ -24,6 +24,12 @@ interface ArcheryDao {
     @Query("SELECT * FROM rounds ORDER BY `index` ASC")
     fun getAllRounds(): Flow<List<RoundEntity>>
 
+    @Query("SELECT * FROM sessions")
+    suspend fun getAllSessionsOnce(): List<SessionEntity>
+
+    @Query("SELECT * FROM rounds")
+    suspend fun getAllRoundsOnce(): List<RoundEntity>
+
     @Query("SELECT * FROM sessions WHERE dirty = 1")
     suspend fun getDirtySessions(): List<SessionEntity>
 
@@ -41,4 +47,7 @@ interface ArcheryDao {
 
     @Query("DELETE FROM rounds WHERE sessionId = :sessionId")
     suspend fun deleteRoundsForSession(sessionId: String)
+
+    @Query("DELETE FROM rounds WHERE id = :id")
+    suspend fun deleteRound(id: String)
 }
