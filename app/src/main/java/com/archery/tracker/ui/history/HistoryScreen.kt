@@ -14,12 +14,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -28,6 +32,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -40,7 +47,9 @@ import com.archery.tracker.ui.ROUTE_NEW_SESSION
 import com.archery.tracker.ui.friendlyDate
 import com.archery.tracker.ui.label
 import com.archery.tracker.ui.sessionDetailRoute
+import com.archery.tracker.ui.theme.LocalThemeController
 import com.archery.tracker.ui.theme.Spacing
+import com.archery.tracker.ui.theme.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +58,7 @@ fun HistoryScreen(container: AppContainer, navController: NavController) {
     val rows by viewModel.rows.collectAsState()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Archery Tracker") }) },
+        topBar = { TopAppBar(title = { Text("Archery Tracker") }, actions = { ThemeMenu() }) },
         floatingActionButton = {
             FloatingActionButton(onClick = { navController.navigate(ROUTE_NEW_SESSION) }) {
                 Icon(Icons.Filled.Add, contentDescription = "New session")
@@ -125,6 +134,28 @@ private fun HistoryCard(row: HistoryRow, onClick: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ThemeMenu() {
+    val controller = LocalThemeController.current
+    var open by remember { mutableStateOf(false) }
+    IconButton(onClick = { open = true }) {
+        Icon(Icons.Filled.Brightness6, contentDescription = "Theme")
+    }
+    DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        ThemeMode.entries.forEach { mode ->
+            val label = when (mode) {
+                ThemeMode.SYSTEM -> "System default"
+                ThemeMode.LIGHT -> "Light"
+                ThemeMode.DARK -> "Dark"
+            }
+            DropdownMenuItem(
+                text = { Text(if (mode == controller.mode) "✓  $label" else label) },
+                onClick = { controller.setMode(mode); open = false },
+            )
         }
     }
 }

@@ -5,7 +5,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/** Lets any screen read the current theme mode and change it; provided from MainActivity. */
+class ThemeController(val mode: ThemeMode, val setMode: (ThemeMode) -> Unit)
+
+val LocalThemeController = staticCompositionLocalOf {
+    ThemeController(ThemeMode.SYSTEM) {}
+}
 
 private val Gold = Color(0xFFB8860B)
 private val GoldLight = Color(0xFFFFE7A3)
@@ -44,7 +54,15 @@ private val DarkColors = darkColorScheme(
 )
 
 @Composable
-fun ArcheryTheme(content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) DarkColors else LightColors
-    MaterialTheme(colorScheme = colors, typography = AppTypography, content = content)
+fun ArcheryTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    MaterialTheme(
+        colorScheme = if (dark) DarkColors else LightColors,
+        typography = AppTypography,
+        content = content,
+    )
 }
