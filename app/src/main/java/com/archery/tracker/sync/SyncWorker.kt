@@ -14,11 +14,9 @@ class SyncWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        // Push local changes up first, then pull the server's state down and merge, so a device
-        // sees sessions created on another device (e.g. the web client).
-        val push = repository.syncDirty()
-        val pull = repository.pullAndMerge()
-        return if (push.isSuccess && pull.isSuccess) Result.success() else Result.retry()
+        // A full two-way sync: push local changes up, then pull the server's state down and merge,
+        // so a device sees sessions created on another device (e.g. the web client).
+        return if (repository.sync().isSuccess) Result.success() else Result.retry()
     }
 }
 

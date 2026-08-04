@@ -153,4 +153,29 @@ class PullSyncTest {
         assertTrue(repository.pullAndMerge().isFailure)
         assertEquals(1, db.archeryDao().getAllSessionsOnce().size)
     }
+
+    @Test
+    fun `compares timestamps as instants so sub-millisecond precision is not inverted`() = runBlocking {
+        // "…100Z" sorts lexically AFTER "…100001Z" even though it is chronologically EARLIER.
+        db.archeryDao().upsertSession(localSession(arrowSet = "OLD", updatedAt = "2026-08-02T00:00:00.100Z", dirty = false))
+        api.sessionsToReturn = listOf(serverSession(arrowSet = "NEW", updatedAt = "2026-08-02T00:00:00.100001Z"))
+
+        repository.pullAndMerge()
+
+        assertEquals("NEW", db.archeryDao().getAllSessionsOnce().first().arrowSet)
+    }
+
+    @Test
+    fun `a full sync cycle keeps a session whose round was dirty at the start even after the push clears it`() = runBlocking {
+        // Session is clean locally but has an unpushed (dirty) round; meanwhile it was deleted on the
+        // server. The push clears the round's dirty flag, but sync() must still protect the session.
+        db.archeryDao().upsertSession(localSession(dirty = false))
+        db.archeryDao().upsertRound(localRound(id = "r1", dirty = true))
+        api.sessionsToReturn = emptyList()
+
+        assertTrue(repository.sync().isSuccess)
+
+        assertEquals(1, db.archeryDao().getAllSessionsOnce().size)
+        assertNotNull(db.archeryDao().getRoundsForSession("s1").firstOrNull { it.id == "r1" })
+    }
 }
